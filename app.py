@@ -4,6 +4,7 @@ Orchestrator with Integrity, Forensic, and Governance Agents
 v2.2 — Hallucination Shield · Advanced Forensics · Decision Timeline · Sanity Check
 """
 
+import os
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
@@ -316,7 +317,9 @@ st.markdown("""
 @st.cache_data
 def load_default_ledger() -> pd.DataFrame:
     """Loads the bundled demo ledger from data/ledger.csv."""
-    df = pd.read_csv("data/ledger.csv")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    ledger_path = os.path.join(current_dir, 'data', 'ledger.csv')
+    df = pd.read_csv(ledger_path)
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
@@ -332,7 +335,9 @@ def load_uploaded_ledger(file_bytes: bytes) -> pd.DataFrame:
 
 @st.cache_data
 def load_rules() -> dict:
-    with open("data/compliance_rules.json", "r", encoding="utf-8") as f:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    rules_path = os.path.join(current_dir, 'data', 'compliance_rules.json')
+    with open(rules_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 # ── FILE UPLOADER ──────────────────────────────────────────
