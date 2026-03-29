@@ -1,0 +1,261 @@
+{
+  "metadata": {
+    "schema_version": "2.1.0",
+    "authority": "FinCEN - Financial Crimes Enforcement Network",
+    "jurisdiction": "United States",
+    "last_updated": "2026-01-01",
+    "effective_date": "2026-01-01",
+    "description": "Compliance rules, thresholds, and AML typology definitions for FinGuard-Nexus agent reference. Sources: Bank Secrecy Act (BSA), FinCEN advisories FIN-2014-A007, FIN-2012-A001, and FATF Guidance on Money Laundering Typologies."
+  },
+
+  "fincen_reporting_thresholds": {
+    "currency_transaction_report": {
+      "rule_id": "CTR-001",
+      "regulation": "31 CFR 1010.311",
+      "threshold_usd": 10000,
+      "description": "Financial institutions must file a CTR for any cash transaction (deposit, withdrawal, exchange, or other payment) exceeding $10,000 in a single business day, even if conducted in multiple transactions.",
+      "filing_deadline_days": 15,
+      "form": "FinCEN Form 112",
+      "applies_to": ["CASH"],
+      "aggregation_window_hours": 24,
+      "flag_code": "CTR_REQUIRED"
+    },
+    "suspicious_activity_report": {
+      "rule_id": "SAR-001",
+      "regulation": "31 CFR 1020.320",
+      "threshold_usd": 5000,
+      "description": "A SAR must be filed when a financial institution knows, suspects, or has reason to suspect a transaction involves funds from illegal activity, is designed to evade BSA requirements, or lacks a lawful purpose.",
+      "filing_deadline_days": 30,
+      "form": "FinCEN Form 111",
+      "flag_code": "SAR_REQUIRED"
+    },
+    "international_wire_transfer": {
+      "rule_id": "WIRE-001",
+      "regulation": "31 CFR 1010.410 (Travel Rule)",
+      "threshold_usd": 3000,
+      "description": "For international wire transfers of $3,000 or more, financial institutions must collect, retain, and transmit originator and beneficiary information (Travel Rule).",
+      "flag_code": "TRAVEL_RULE"
+    },
+    "ofac_screening": {
+      "rule_id": "OFAC-001",
+      "regulation": "Executive Order 13224 / IEEPA",
+      "threshold_usd": 0,
+      "description": "All transactions must be screened against OFAC's Specially Designated Nationals (SDN) list regardless of amount. Any match must be blocked and reported immediately.",
+      "flag_code": "OFAC_HIT"
+    },
+    "monetary_instrument_log": {
+      "rule_id": "MIL-001",
+      "regulation": "31 CFR 1010.415",
+      "threshold_usd": 3000,
+      "description": "Purchases of monetary instruments (cashier's checks, money orders, traveler's checks) between $3,000 and $10,000 require the institution to record purchaser identification.",
+      "flag_code": "MIL_REQUIRED"
+    }
+  },
+
+  "aml_typologies": {
+    "structuring": {
+      "typology_id": "AML-T001",
+      "name": "Structuring (Smurfing)",
+      "fincen_advisory": "FIN-2014-A007",
+      "fatf_category": "Placement",
+      "description": "The deliberate breaking up of large cash transactions into smaller amounts — typically just below the $10,000 CTR threshold — to evade mandatory reporting requirements. This is a federal crime under 31 U.S.C. § 5324.",
+      "legal_reference": "31 U.S.C. § 5324 (a) - Structuring to evade reporting requirements",
+      "penalty": "Civil and criminal penalties; up to 5 years imprisonment",
+      "detection_rules": {
+        "rule_id": "STRUCT-001",
+        "cash_deposit_threshold_usd": 9000,
+        "max_single_transaction_usd": 9999,
+        "min_transaction_count": 3,
+        "time_window_hours": 72,
+        "same_account_required": true,
+        "same_currency_required": true,
+        "channel_filter": ["CASH"],
+        "red_flags": [
+          "Multiple cash deposits by same individual just below $10,000",
+          "Deposits at multiple branches on same day",
+          "Customer shows awareness of reporting thresholds",
+          "Rapid succession of same-amount cash transactions",
+          "Customer uses multiple family members to make deposits (smurfing)"
+        ]
+      },
+      "ledger_stress_test": {
+        "account": "ACC-5599",
+        "holder": "Sarah Jenkins",
+        "transaction_ids": ["TXN-0025","TXN-0026","TXN-0027","TXN-0028","TXN-0031","TXN-0033","TXN-0036","TXN-0038","TXN-0041","TXN-0043","TXN-0045","TXN-0048"],
+        "each_amount_usd": 9500,
+        "total_deposits_usd": 114000,
+        "deposit_count": 12,
+        "date_range": "2026-03-03 to 2026-03-04",
+        "window_hours": 48,
+        "flag_code": "STRUCTURING_ALERT"
+      }
+    },
+
+    "layering_pass_through": {
+      "typology_id": "AML-T002",
+      "name": "Layering - Rapid Pass-Through / Wire Cycling",
+      "fincen_advisory": "FIN-2012-A001",
+      "fatf_category": "Layering",
+      "description": "Rapid movement of funds in and out of an account within a very short timeframe via wire transfers, effectively using the account as a conduit ('pass-through') to obscure the origin and destination of illicit funds. Commonly used to break the audit trail.",
+      "legal_reference": "18 U.S.C. § 1956 - Laundering of monetary instruments",
+      "penalty": "Criminal penalties; up to 20 years imprisonment and fines up to $500,000 or twice the amount laundered",
+      "detection_rules": {
+        "rule_id": "LAYER-001",
+        "inbound_wire_threshold_usd": 25000,
+        "pass_through_time_window_hours": 24,
+        "outbound_percentage_of_inbound_min": 90,
+        "channel_filter": ["WIRE"],
+        "suspicious_counterparty_indicators": [
+          "Shell company jurisdictions (BVI, Panama, Cayman Islands, Luxembourg)",
+          "Mismatched business descriptions",
+          "High-risk geographic corridors",
+          "Counterparty with no prior transaction history"
+        ],
+        "red_flags": [
+          "Large wire in immediately followed by large wire out",
+          "Net account balance near zero after transaction",
+          "Counterparty located in high-risk or secrecy jurisdiction",
+          "Description references vague agreements or 'per arrangement'",
+          "No apparent business purpose for the transaction volume"
+        ]
+      },
+      "ledger_stress_test": {
+        "account": "ACC-9982",
+        "holder": "Blake Monroe",
+        "transaction_in": {
+          "id": "TXN-0021",
+          "amount_usd": 50000,
+          "counterparty": "Offshore Holdings BVI Ltd",
+          "time": "2026-03-03T08:00:00"
+        },
+        "transaction_out": {
+          "id": "TXN-0022",
+          "amount_usd": 50000,
+          "counterparty": "Quantum Shell Corp Panama",
+          "time": "2026-03-03T09:47:00"
+        },
+        "elapsed_minutes": 107,
+        "net_balance_change_usd": 0,
+        "flag_code": "LAYERING_ALERT"
+      }
+    },
+
+    "reconciliation_mismatch": {
+      "typology_id": "AML-T003",
+      "name": "Ledger Reconciliation Mismatch",
+      "fatf_category": "Integration",
+      "description": "A discrepancy between the total sum of all debit transactions and the total sum of all credit transactions in the ledger, beyond an acceptable tolerance threshold. Indicates potential unrecorded transactions, manual overrides, or fraudulent entries.",
+      "detection_rules": {
+        "rule_id": "RECON-001",
+        "tolerance_usd": 0.01,
+        "expected_mismatch_usd": 5000.00,
+        "scope": "full_ledger",
+        "red_flags": [
+          "Total credits minus total debits deviates from expected net position",
+          "Single outlier transaction inflating credit or debit totals",
+          "Transaction with no corresponding counterparty record",
+          "Missing or null transaction reference fields"
+        ]
+      },
+      "ledger_stress_test": {
+        "description": "TXN-0100 introduces a $5,000 reconciliation mismatch. The credit of $12,800 from 'Overseas Asset Trust BVI' inflates total credits. Agents should compute sum(CREDIT) - sum(DEBIT) and verify it deviates from the expected net by exactly $5,000.",
+        "mismatch_transaction_id": "TXN-0100",
+        "injected_mismatch_usd": 5000.00,
+        "flag_code": "RECONCILIATION_MISMATCH"
+      }
+    },
+
+    "trade_based_money_laundering": {
+      "typology_id": "AML-T004",
+      "name": "Trade-Based Money Laundering (TBML)",
+      "fincen_advisory": "FIN-2010-G004",
+      "fatf_category": "All Stages",
+      "description": "The process of disguising the proceeds of crime and moving value through the use of trade transactions. Techniques include over- and under-invoicing, multiple invoicing, phantom shipments, and falsely describing goods and services.",
+      "legal_reference": "31 U.S.C. § 5318(g)",
+      "detection_rules": {
+        "rule_id": "TBML-001",
+        "red_flags": [
+          "Invoice amount inconsistent with market value of goods or services",
+          "Unusual payment terms or financing structures",
+          "Involvement of third-party payments not party to the trade",
+          "Transactions with high-risk countries or free trade zones",
+          "Counterparty is newly formed or has no established trade history"
+        ]
+      }
+    },
+
+    "politically_exposed_persons": {
+      "typology_id": "AML-T005",
+      "name": "Politically Exposed Persons (PEP) Risk",
+      "fatf_recommendation": "12",
+      "description": "Individuals who are or have been entrusted with prominent public functions, including heads of state, senior politicians, judicial officials, and their immediate family members and close associates. PEPs present elevated corruption and bribery risks and require Enhanced Due Diligence (EDD).",
+      "detection_rules": {
+        "rule_id": "PEP-001",
+        "edd_threshold_usd": 5000,
+        "red_flags": [
+          "Customer matches PEP screening database",
+          "Source of funds cannot be independently verified",
+          "Transactions inconsistent with public salary or known income",
+          "Counterparty is a government entity or state-owned enterprise",
+          "Use of nominee accounts or legal entities to obscure PEP involvement"
+        ]
+      }
+    }
+  },
+
+  "risk_scoring": {
+    "description": "Risk score components used by agents to compute a composite AML risk score (0-100) per account.",
+    "components": [
+      {
+        "factor": "cash_transaction_volume",
+        "weight": 0.25,
+        "description": "Total cash transaction value as percentage of total activity"
+      },
+      {
+        "factor": "wire_transfer_to_high_risk_jurisdiction",
+        "weight": 0.30,
+        "description": "Number and volume of wires to FATF grey/black list countries or secrecy jurisdictions"
+      },
+      {
+        "factor": "transaction_velocity",
+        "weight": 0.20,
+        "description": "Frequency of transactions relative to account history baseline"
+      },
+      {
+        "factor": "structuring_score",
+        "weight": 0.15,
+        "description": "Probability score from structuring detection model"
+      },
+      {
+        "factor": "pep_exposure",
+        "weight": 0.10,
+        "description": "Binary flag for PEP-linked counterparties, weighted by transaction volume"
+      }
+    ],
+    "thresholds": {
+      "low_risk": {"min": 0, "max": 30, "action": "Standard monitoring"},
+      "medium_risk": {"min": 31, "max": 59, "action": "Enhanced monitoring, document review"},
+      "high_risk": {"min": 60, "max": 79, "action": "Enhanced Due Diligence (EDD), senior officer review"},
+      "critical_risk": {"min": 80, "max": 100, "action": "File SAR, consider account suspension, notify BSA officer"}
+    }
+  },
+
+  "high_risk_jurisdictions": {
+    "fatf_blacklist": ["North Korea", "Iran", "Myanmar"],
+    "fatf_greylist_2026": ["Bulgaria", "Cameroon", "Côte d'Ivoire", "Croatia", "Democratic Republic of Congo", "Haiti", "Kenya", "Mali", "Monaco", "Mozambique", "Namibia", "Nigeria", "Philippines", "South Africa", "Syria", "Tanzania", "Venezuela", "Vietnam", "Yemen"],
+    "bank_secrecy_jurisdictions": ["British Virgin Islands", "Cayman Islands", "Panama", "Luxembourg", "Liechtenstein", "Bermuda", "Jersey", "Isle of Man"],
+    "note": "Wire transfers to or from entities in these jurisdictions automatically trigger Travel Rule (WIRE-001) and warrant enhanced counterparty due diligence."
+  },
+
+  "agent_instructions": {
+    "description": "Instructions for FinGuard-Nexus agents on how to apply these rules during ledger analysis.",
+    "steps": [
+      "1. Load ledger.csv and compute sum(CREDIT) and sum(DEBIT) across all SETTLED transactions. Flag if abs(sum(CREDIT) - sum(DEBIT) - expected_net) > RECON-001.tolerance_usd.",
+      "2. For each account, aggregate all CASH channel transactions within any rolling 72-hour window. If count >= STRUCT-001.min_transaction_count AND each amount is between STRUCT-001.cash_deposit_threshold_usd and STRUCT-001.max_single_transaction_usd, raise STRUCTURING_ALERT.",
+      "3. For each account, check if any CREDIT wire is followed by a DEBIT wire within LAYER-001.pass_through_time_window_hours, where debit_amount >= 0.90 * credit_amount. If so, raise LAYERING_ALERT.",
+      "4. Screen all counterparty_name values against high_risk_jurisdictions lists. Flag TRAVEL_RULE if wire threshold is met.",
+      "5. For every flagged transaction, compute a composite risk score using the risk_scoring.components weights.",
+      "6. Output a structured report with: account_number, holder, typology_id, flag_code, evidence_transaction_ids, risk_score, recommended_action."
+    ]
+  }
+}
