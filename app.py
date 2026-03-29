@@ -5,6 +5,7 @@ v2.2 — Hallucination Shield · Advanced Forensics · Decision Timeline · Sani
 """
 
 import os
+from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
@@ -14,6 +15,8 @@ import datetime
 import time
 import re
 from io import StringIO
+
+parent_path = Path(__file__).parent
 
 # ─────────────────────────────────────────────
 #  PAGE CONFIGURATION  (MUST be first Streamlit call)
@@ -316,9 +319,8 @@ st.markdown("""
 # ─────────────────────────────────────────────
 @st.cache_data
 def load_default_ledger() -> pd.DataFrame:
-    """Loads the bundled demo ledger from data/ledger.csv."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    ledger_path = os.path.join(current_dir, 'data', 'ledger.csv')
+    """Loads the bundled demo ledger from ledger.csv."""
+    ledger_path = parent_path / "ledger.csv"
     df = pd.read_csv(ledger_path)
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
@@ -334,10 +336,9 @@ def load_uploaded_ledger(file_bytes: bytes) -> pd.DataFrame:
     return df
 
 @st.cache_data
-def load_rules() -> dict:
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    rules_path = os.path.join(current_dir, 'data', 'compliance_rules.json')
-    with open(rules_path, "r", encoding="utf-8") as f:
+def load_rules():
+    rules_file = parent_path / "compliance_rules.json"
+    with open(rules_file, "r", encoding="utf-8") as f:
         return json.load(f)
 
 # ── FILE UPLOADER ──────────────────────────────────────────
